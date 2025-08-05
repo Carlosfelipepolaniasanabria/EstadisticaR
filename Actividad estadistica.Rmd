@@ -1,0 +1,167 @@
+
+Titulo: "Estudio Estadistico"
+Nombres: "Carlos Felipe Polania Sanabria, Abdiel Amarocho, Angel Luna, Santiago Marin Marin"
+
+# Alimentacion y rendimiento academico.
+Una universidad está evaluando si existe relación entre los hábitos alimenticios de los estudiantes y su desempeño académico. Se encuestan 90 estudiantes, registrando variables como número de comidas al día, consumo de comida rápida (frecuente/poco frecuente), modalidad de estudio, y promedio académico.
+
+
+```{r}
+set.seed(123)
+n <- 90
+datos <- data.frame(
+  Comidas_al_dia = sample(2:5, n, replace = TRUE),
+  Comida_Rapida = sample(c("Frecuente", "Poco_frecuente"), n, replace = TRUE),
+  modalidad = sample(c("Presencial", "Virtual", "Híbrida"), n, replace = TRUE),
+  promedio = round(rnorm(n, 3.5, 0.5), 2)
+)
+
+head(datos, 90)
+```
+
+Variables cualitativas.
+
+Comida_Rapida
+
+Modelidad
+
+Variables cuantitativas.
+
+Comidas_al_dia
+
+promedio
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+#Tabla de frecuencias (absolutas, relativas, porcentajes)
+frecuencias_cualitativas <- function(variable, nombre_variable) {
+  tab <- table(variable)
+  data.frame(
+    Variable = nombre_variable,
+    Categoria = names(tab),
+    Frecuencia = as.vector(tab),
+    Relativa = round(prop.table(tab), 3),
+    Porcentaje = round(prop.table(tab) * 100, 1)
+  )
+}
+
+tabla_Comida_Rapida <- frecuencias_cualitativas(datos$Comida_Rapida, "Comida_Rapida")
+tabla_modalidad <- frecuencias_cualitativas(datos$modalidad, "modalidad")
+
+
+tabla_Comida_Rapida %>%
+  kbl(caption = "Tabla de Frecuencias de Variable Comida_Rapida", align = "c") %>%
+  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed"), font_size = 14)
+
+tabla_modalidad %>%
+  kbl(caption = "Tabla de Frecuencias de Variable Modalidad", align = "c") %>%
+  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed"), font_size = 14)
+```
+
+
+```{r}
+barplot(table(datos$Comida_Rapida), col = "green", main = "Distribución por Comida Rapida")
+```
+
+```{r}
+barplot(table(datos$modalidad), col = "skyblue", main = "Distribución por Modalidad")
+```
+
+```{r}
+tabla_Comida_Rapida <- table(datos$Comida_Rapida)
+porcent_Comida_Rapida <- round(prop.table(tabla_Comida_Rapida) * 100, 1)
+labels_Comida_Rapida <- paste0(porcent_Comida_Rapida, "%")
+
+pie(tabla_Comida_Rapida, labels = labels_Comida_Rapida, main = "Distribución por Comida_Rapida", col = rainbow(length(tabla_Comida_Rapida)))
+legend("topright", legend = names(tabla_Comida_Rapida), fill = rainbow(length(tabla_Comida_Rapida)), cex = 0.8, box.lwd = 0)
+```
+
+```{r}
+tabla_modalidad <- table(datos$modalidad)
+porcent_modalidad <- round(prop.table(tabla_modalidad) * 100, 1)
+labels_modalidad <- paste0(porcent_modalidad, "%")
+
+pie(tabla_modalidad, labels = labels_modalidad, main = "Distribución por Modalidad", col = rainbow(length(tabla_modalidad)))
+legend("topright", legend = names(tabla_modalidad), fill = rainbow(length(tabla_modalidad)), cex = 0.8, box.lwd = 0)
+```
+
+
+```{r}
+
+tabla_Comidas_al_dia <- frecuencias_cualitativas(datos$Comidas_al_dia, "Comida_Rapida")
+
+tabla_Comidas_al_dia %>%
+  kbl(caption = "Tabla de Frecuencias de Variable Comidas al día", align = "c") %>%
+  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed"), font_size = 14)
+```
+
+
+```{r}
+# Definimos los cortes para los intervalos
+breaks_promedio <- seq(floor(min(datos$promedio)), ceiling(max(datos$promedio)), by = 2)
+
+# Creamos una nueva variable categórica con los intervalos, sin modificar la original
+intervalos_promedio <- cut(datos$promedio, breaks = breaks_promedio, right = FALSE)
+
+# Construimos la tabla de frecuencias
+tabla_promedio <- data.frame(
+  Intervalo = levels(intervalos_promedio),
+  Frecuencia = as.vector(table(intervalos_promedio)),
+  Relativa = round(prop.table(table(intervalos_promedio)), 3),
+  Acumulada = cumsum(table(intervalos_promedio))
+)
+
+# Mostramos la tabla
+library(kableExtra)
+
+tabla_promedio %>%
+  kbl(caption = "Tabla de Frecuencias del Promedio", align = "c") %>%
+  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed"), font_size = 14)
+```
+
+```{r}
+# Histograma y polígono de frecuencia en la misma gráfica
+hist_data <- hist(datos$promedio,
+                  breaks = breaks_promedio,
+                  col = "lightblue",
+                  main = "Histograma y Polígono de Frecuencia",
+                  xlab = "Promedio",
+                  ylab = "Frecuencia")
+
+# Agregar polígono de frecuencia
+lines(hist_data$mids, hist_data$counts, type = "b", col = "red", lwd = 2, pch = 19)
+
+```
+
+
+```{r}
+boxplot(promedio ~ Comida_Rapida, data = datos,
+        col = c("orange", "steelblue"),
+        main = "Promedio académico según consumo de comida rápida",
+        ylab = "Promedio académico",
+        xlab = "Consumo de comida rápida")
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Contar personas por modalidad, consumo y comidas al día
+conteo_todas <- datos %>%
+  group_by(modalidad, Comida_Rapida, Comidas_al_dia) %>%
+  summarise(n_personas = n(), .groups = "drop")
+
+# Gráfico de barras agrupadas
+ggplot(conteo_todas, aes(x = factor(Comidas_al_dia), y = n_personas, fill = Comida_Rapida)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~ modalidad) +
+  labs(title = "Número de comidas al día según modalidad y consumo de comida rápida",
+       x = "Comidas por día",
+       y = "Cantidad de estudiantes") +
+  scale_fill_manual(values = c("orange", "steelblue"))
+```
+
+
+
